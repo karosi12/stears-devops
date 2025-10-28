@@ -29,7 +29,7 @@ pipeline {
             steps {
                 script {
                     sh '''
-                    echo "Starting build for stears infrastructure..."
+                     echo "Starting build for stears infrastructure..."
                     '''
                 }
             }
