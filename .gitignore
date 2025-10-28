@@ -1,0 +1,9 @@
+infra/.terraform.lock.hcl
+*.csv
+todo.md
+infra/.terraform/*
+*.tfvars
+*.pem
+*.log
+.vscode/
+infra/stears.tfplan

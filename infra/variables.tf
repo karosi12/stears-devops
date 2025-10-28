@@ -1,0 +1,19 @@
+variable "master_username" {}
+variable "master_password" {}
+variable "database_name" {}
+variable "proxy_name" {}
+variable "cluster_identifier" {}
+variable "cluster_id" {}
+# variable "sg_name" {}
+variable "vpc_name" {}
+variable "rds_proxy_secret_name" {}
+variable "secret_key" {}
+variable "access_key" {}
+variable "mq_username" {}
+variable "mq_password" {}
+variable "region" {}
+variable "host_instance_type" {}
+variable "engine_version" {}
+variable "broker_name" {}
+variable "environment" {}
+variable "broker_nodes" {}

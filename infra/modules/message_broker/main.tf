@@ -1,0 +1,168 @@
+# resource "aws_mq_broker" "rabbitmq_broker" {
+#   broker_name                = var.broker_name
+#   engine_type                = "RabbitMQ"
+#   engine_version             = var.engine_version
+#   deployment_mode            = "CLUSTER_MULTI_AZ"
+#   host_instance_type         = var.host_instance_type
+#   publicly_accessible        = false
+#   subnet_ids                 = var.subnet_ids
+#   security_groups            = [aws_security_group.rabbitmq_sg.id]
+#   auto_minor_version_upgrade = true
+#   logs {
+#     general = true
+#     # audit   = true
+#   }
+
+#   user {
+#     username = var.username
+#     password = var.password
+#   }
+
+#   tags = {
+#     Name = var.broker_name
+#   }
+# }
+
+# ## MQ Security Group
+
+# resource "aws_security_group" "rabbitmq_sg" {
+#   name        = "${var.broker_name}-sg"
+#   description = "Security group for Amazon MQ RabbitMQ broker"
+#   vpc_id      = var.vpc_id
+
+#   # Allow inbound RabbitMQ traffic ONLY from ECS tasks’ security group
+#   ingress {
+#     description = "Allow AMQP over SSL (5671) from ECS tasks"
+#     from_port   = 5671
+#     to_port     = 5671
+#     protocol    = "tcp"
+#     # security_groups = [var.ecs_tasks_sg_id]
+#     cidr_blocks = [var.vpc_cidr]
+#   }
+
+#   ingress {
+#     description = "Allow AMQP (5672) from ECS tasks"
+#     from_port   = 5672
+#     to_port     = 5672
+#     protocol    = "tcp"
+#     # security_groups = [var.ecs_tasks_sg_id]
+#     cidr_blocks = [var.vpc_cidr]
+#   }
+
+#   ingress {
+#     description = "Allow RabbitMQ management console (15672) from ECS tasks"
+#     from_port   = 15672
+#     to_port     = 15672
+#     protocol    = "tcp"
+#     # security_groups = [var.ecs_tasks_sg_id]
+#     cidr_blocks = [var.vpc_cidr]
+#   }
+
+#   # Allow outbound to anywhere (for updates, metrics, etc.)
+#   egress {
+#     from_port   = 0
+#     to_port     = 0
+#     protocol    = "-1"
+#     cidr_blocks = ["0.0.0.0/0"]
+#   }
+
+#   tags = {
+#     Name = "${var.broker_name}-sg"
+#   }
+# }
+
+# output "security_group_id" {
+#   value = aws_security_group.rabbitmq_sg.id
+# }
+
+# output "rabbitmq_broker_endpoint" {
+#   description = "The endpoint URL of the RabbitMQ broker"
+#   value       = aws_mq_broker.rabbitmq_broker.instances[0].endpoints[0]
+# }
+
+#############################################
+# Amazon MSK (Kafka) Message Broker Module
+#############################################
+
+# --- MSK Configuration ---
+resource "aws_msk_configuration" "kafka_config" {
+  name = "${var.broker_name}-config"
+
+  kafka_versions = ["3.6.0"]
+
+  server_properties = <<PROPERTIES
+auto.create.topics.enable = true
+delete.topic.enable = true
+default.replication.factor = 2
+min.insync.replicas = 1
+num.partitions = 3
+PROPERTIES
+}
+
+# --- MSK Cluster ---
+resource "aws_msk_cluster" "kafka_cluster" {
+  cluster_name           = var.broker_name
+  kafka_version          = var.engine_version
+  number_of_broker_nodes = var.broker_nodes
+
+  broker_node_group_info {
+    instance_type   = var.host_instance_type
+    client_subnets  = var.subnet_ids
+    security_groups = [aws_security_group.msk_sg.id]
+  }
+
+  configuration_info {
+    arn      = aws_msk_configuration.kafka_config.arn
+    revision = aws_msk_configuration.kafka_config.latest_revision
+  }
+
+  encryption_info {
+    encryption_in_transit {
+      client_broker = "TLS"
+      in_cluster    = true
+    }
+  }
+
+  tags = {
+    Name        = var.broker_name
+    Environment = var.environment
+  }
+}
+
+# --- Security Group for MSK ---
+resource "aws_security_group" "msk_sg" {
+  name        = "${var.broker_name}-msk-sg"
+  description = "Security group for Amazon MSK Kafka cluster"
+  vpc_id      = var.vpc_id
+
+  ingress {
+    description     = "Allow Kafka traffic (TLS 9094) from ECS Fargate"
+    from_port       = 9094
+    to_port         = 9094
+    protocol        = "tcp"
+    security_groups = [var.ecs_tasks_sg_id] # only ECS tasks allowed
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "${var.broker_name}-sg"
+  }
+}
+
+# --- Outputs ---
+output "msk_security_group_id" {
+  description = "Security group ID for the MSK cluster"
+  value       = aws_security_group.msk_sg.id
+}
+
+output "msk_bootstrap_brokers_tls" {
+  description = "Bootstrap broker string for TLS connection"
+  value       = aws_msk_cluster.kafka_cluster.bootstrap_brokers_tls
+}
+
