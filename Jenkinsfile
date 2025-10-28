@@ -51,6 +51,21 @@ pipeline {
                 }
             }
         }
+
+        stage('AWS Login') {
+            steps {
+                echo "Configuring AWS credentials..."
+                sh '''
+                aws configure set aws_access_key_id "$AWS_ACCESS_KEY_ID"
+                aws configure set aws_secret_access_key "$AWS_SECRET_ACCESS_KEY"
+                aws configure set region "$AWS_REGION"
+
+                echo "Verifying AWS identity..."
+                aws sts get-caller-identity
+                '''
+            }
+        }
+
         stage('Generate terraform.tfvars') {
             steps {
                 dir('stears-devops/infra') {
