@@ -37,9 +37,9 @@ broker_nodes          = 2
 - To Provision the instance using terraform command afer changing directory to each folder infra
 ```
 terraform init
-terraform plan -out=strears.tfplan # To dry-run before apply the changes
-terraform apply "strears.tfplan" # An instruction will be given to enter y for yes
-terraform apply "strears.tfplan" -auto-approve # This command is use to provision without typing the yes/y key word
+terraform plan -out=stears.tfplan # To dry-run before apply the changes
+terraform apply "stears.tfplan" # An instruction will be given to enter y for yes
+terraform apply -auto-approve stears.tfplan # This command is use to provision without typing the yes/y key word
 ```
 ## Troubleshooting
 - Common fixes:
