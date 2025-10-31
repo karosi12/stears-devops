@@ -48,5 +48,8 @@ terraform apply -auto-approve stears.tfplan # This command is use to provision w
   - Validate syntax: `terraform validate`
   - Format files: `terraform fmt -recursive`
 
+![Diagram](./secure-scalable-microservice.drawio.png)
+![Terraform graph](./graphviz.svg)
+
 ## Contact info
 - You can reach me via email for more clarification <adekayor@gmail.com>
